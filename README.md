@@ -1,0 +1,2 @@
+# NEB_Excel_Macro
+This macro will automatically calculate the activation barrier, change the transition state energy to red, and create plots with curve fitting for each path. The user is responsible in generating a text format with directory paths between NEB energies. The text must be sequential and the final line must contain a "/". An example text format is provided. Along with a bash collection script (to generate such text format) and an example excel sheet. This is my first time learning visual basic, thus this code has many potential improvements.
