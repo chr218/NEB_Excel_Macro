@@ -1,0 +1,151 @@
+Private Sub CommandButton1_Click()
+
+Dim sh As Worksheet
+Dim rw As Range
+Dim RowCount As Integer
+Dim final_bool As Boolean
+Dim initial_bool As Boolean
+Dim initial_count As String
+Dim final_count As String
+
+Dim barrier As Double
+Dim barrier_Cell As String
+Dim rng As String 'Range of image energies for determinning activiation barrier
+
+Dim final_cell() As String 'Hold string for MAX()
+Dim initial_cell() As String 'Holds string for MAX()
+
+Dim reactants_cell() As String
+Dim reactants_cell_int As Integer
+Dim reactants_cell_str As String
+
+
+'Dynamic Array
+Dim barrier_arr() As Variant
+Dim barrier_cell_string_arr() As Variant
+Dim X As Long
+
+
+
+RowCount = 0
+final_bool = "False"
+initial_bool = "True"
+
+
+Set sh = ActiveSheet
+For Each rw In sh.Rows
+
+  If Left(rw.Text, 1) = "/" Then
+    If final_bool = "True" Then
+      
+      final_count = rw.Address
+
+      reactants_cell_int = Count2Int(initial_count, 1) 'Obtain integer portion of reactantsa cell. (i.e is $A$12 is image 0 then Count2int_initial gives back 12)
+      reactants_cell_str = Count2Cell(initial_count, 1)
+      
+      barrier_cell_str = "B" + CStr(reactants_cell_int) 'Location of where to place barrier height, where "reactants_cell_int" is the integer part of the cell location. (i.e $A$13-> 13)
+      
+      rng = Count2Cell(initial_count, 1) + ":" + Count2Cell(final_count, -1)
+      barrier = GetMax(rng) - Range(reactants_cell_str).Value 'Value of barrier
+      Call RedMax(rng) 'Transition State Energy gets highlighted Red
+      
+      'Store barrier double and barrier cell location (to be wrriten) in arrays
+      ReDim Preserve barrier_arr(X)
+      ReDim Preserve barrier_cell_string_arr(X)
+      barrier_arr(X) = barrier
+      barrier_cell_string_arr(X) = barrier_cell_str
+      X = X + 1
+      
+      Call CreateChart(rng)
+
+      initial_bool = "True"
+      final_bool = "False"
+    End If
+    
+    If initial_bool = "True" Then
+      initial_count = rw.Address
+      initial_bool = "False"
+      final_bool = "True"
+    End If
+     
+  End If
+
+  If sh.Cells(rw.Row, 1).Value = "" Then
+    Call Allocate_barrier(barrier_arr, barrier_cell_string_arr)
+    Exit For
+  End If
+  
+Next rw
+
+End Sub
+
+Function GetMax(rng) As Double
+'This function find the max within a range.
+    GetMax = WorksheetFunction.Max(Range(rng))
+End Function
+Function Count2Int(count As String, i As Integer) As Integer
+'This fucntion takes a string cell address and returns the integer portion plus/minus one.(i.e if Cell is $A$12, the function returns "13" for i = 1
+    cell = Split(count, ":")
+    Count2Int = CInt(cell(1)) + i
+End Function
+
+Function Count2Cell(count As String, i As Integer) As String
+'This function takes a string cell address and returns a string cell below/above it depending on "i".
+    cell = Split(count, ":")
+    Count2Cell = "A" + CStr(Count2Int(count, i))
+End Function
+
+Function AddressOfMax(rng As Range) As String
+'This function returns the string address of the cell with the largest value within a range.
+    AddressOfMax = WorksheetFunction.Index(rng, WorksheetFunction.Match(WorksheetFunction.Max(rng), rng, 0)).Address
+
+End Function
+
+Sub Allocate_barrier(barrier_values, barrier_cells)
+'This subroutine prints values into adjacent cells to the NEB ranges.
+Dim j As Integer
+
+For j = 0 To UBound(barrier_values)
+  'MsgBox barrier_values(j)
+  'MsgBox barrier_cells(j)
+  Range(barrier_cells(j)).Value = barrier_values(j)
+  
+
+Next j
+
+
+End Sub
+
+Sub RedMax(rng)
+'This subroutine changes the font color of the maximum within a range to red.
+  Dim Address_Max As String
+  Dim range_input As Range
+  
+  Set range_input = Range(rng)
+  Address_Max = AddressOfMax(range_input)
+  Range(Address_Max).Font.Color = vbRed
+
+End Sub
+
+Sub CreateChart(rng)
+'This subroutine creates the charts. The chart position and dimensions are modified here. Ensure that the range (rng) has only values!!!
+Dim cht As Object
+Dim reactant As String
+Dim product As String
+
+'Create a chart
+Set cht = ActiveSheet.ChartObjects.Add( _
+    Left:=100, _
+    Width:=250, _
+    Top:=Range(rng).Top, _
+    Height:=Range(rng).Height)
+    
+'Give data to chart
+cht.Chart.SetSourceData Source:=ActiveSheet.Range(rng)
+
+'Determine chart type
+cht.Chart.ChartType = xlXYScatterSmooth
+
+End Sub
+
+
